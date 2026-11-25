@@ -1,3 +1,38 @@
+## CachyOS / Linux 額外安裝需求
+
+本分支 `linux-wayland` 除了專案本身的程式碼外，還需要額外安裝及設定以下系統元件，才能完整使用 Linux Input Helper 功能。
+
+### 必須安裝及設定
+
+- [ ] **Polkit**
+  - 安裝 Polkit 權限管理相關元件。
+  - 安裝授權設定檔：
+    `/usr/share/polkit-1/actions/com.bongocat.input-helper.policy`
+  - 安裝使用者授權規則：
+    `/etc/polkit-1/rules.d/49-bongocat-input-helper.rules`
+
+- [ ] **Input Helper**
+  - 安裝 Input Helper 執行檔：
+    `/usr/libexec/bongocat-input-helper`
+  - 設定檔案權限：
+    `root:root`
+    `0755`
+
+- [ ] **systemd**
+  - 安裝及設定 Input Helper 相關 systemd service。
+  - 確認服務已啟用並正常運作。
+
+### 重灌 CachyOS 後注意事項
+
+1. 先安裝必要的系統套件。
+2. 重新編譯 BongoCat。
+3. 安裝 Input Helper。
+4. 安裝 Polkit policy 與授權規則。
+5. 設定及啟用 systemd service。
+6. 確認服務正常運作後再啟動 BongoCat。
+
+**注意：** Git Repository 只保存程式碼，不會自動安裝上述系統檔案或還原系統服務。
+
 ![BongoCat](https://socialify.git.ci/ayangweb/BongoCat/image?font=JetBrains+Mono&forks=1&issues=1&language=1&logo=https%3A%2F%2Fi0.hdslb.com%2Fbfs%2Fopenplatform%2F8b37066049da62a8e6d105363472ef72fe2e435b.png&name=1&owner=1&pattern=Brick+Wall&pulls=1&stargazers=1&theme=Auto)
 
 <div align="center">
