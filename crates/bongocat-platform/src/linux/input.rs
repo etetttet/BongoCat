@@ -24,11 +24,9 @@ impl LinuxInputService {
         axes: GamepadAxisProducer,
         diagnostics: PlatformInputDiagnosticsProducer,
     ) -> Result<Self, PlatformInputError> {
-        let executable =
-            std::env::current_exe().map_err(|_| PlatformInputError::BackendUnavailable)?;
         let mut child = Command::new("/usr/bin/pkexec")
             .arg("--disable-internal-agent")
-            .arg(executable)
+            .arg("/usr/libexec/bongocat-input-helper")
             .arg("--input-helper")
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())

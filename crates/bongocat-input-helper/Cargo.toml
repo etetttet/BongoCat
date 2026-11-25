@@ -16,3 +16,7 @@ dbg_macro = "deny"
 
 [lints.rust]
 unsafe_op_in_unsafe_fn = "deny"
+
+[[bin]]
+name = "bongocat-input-helper"
+path = "src/bin/input-helper.rs"

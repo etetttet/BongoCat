@@ -799,7 +799,7 @@ impl WaylandWindow {
             let layer = shell.create_layer_surface(
                 &qh,
                 surface,
-                Layer::Top,
+                Layer::Overlay,
                 Some(bongocat_config::BUNDLE_ID),
                 None,
             );

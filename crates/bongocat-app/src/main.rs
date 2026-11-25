@@ -23,7 +23,6 @@
 mod binary_tests;
 mod gamepad_observer;
 mod model_cover;
-#[cfg(not(target_os = "linux"))]
 mod overlay_placement;
 #[cfg(not(target_os = "linux"))]
 mod preset_root;
@@ -61,9 +60,12 @@ use bongocat_live2d::CoreLogHandle;
 use bongocat_overlay::OverlayContextMenuRequest;
 #[cfg(not(target_os = "linux"))]
 use bongocat_overlay::{
-    OverlayContextMenuRequest, OverlayInteractionSinks, OverlayResizeOutcome, OverlayWindowBounds,
+    OverlayContextMenuRequest, OverlayInteractionSinks, OverlayResizeOutcome,
 };
-use bongocat_overlay::{OverlayInteractionSinks, OverlayResizeOutcome};
+
+use bongocat_overlay::{
+    OverlayInteractionSinks, OverlayResizeOutcome, OverlayWindowBounds,
+};
 use bongocat_overlay::{OverlaySessionOptions, ProductOverlaySession};
 #[cfg(not(target_os = "linux"))]
 use bongocat_platform::GlobalShortcutService;
@@ -102,6 +104,9 @@ use std::{
 };
 #[cfg(not(target_os = "linux"))]
 use std::{path::Path, path::PathBuf, time::Instant};
+
+#[cfg(target_os = "linux")]
+use std::time::Instant;
 #[cfg(target_os = "windows")]
 use taskbar_settle::{
     TASKBAR_ICON_SETTLE_ATTEMPTS, TASKBAR_ICON_SETTLE_INTERVAL, TaskbarIconSample,
@@ -112,7 +117,6 @@ use gamepad_observer::GamepadConnectionObserver;
 use gpui_kit::BorrowAppContext;
 #[cfg(not(target_os = "linux"))]
 use model_cover::{COVER_CAPTURE_POLL_INTERVAL_MS, capture_imported_model_cover};
-#[cfg(not(target_os = "linux"))]
 use overlay_placement::OverlayPlacementDebouncer;
 #[cfg(not(target_os = "linux"))]
 use preset_root::preset_root;
@@ -2669,34 +2673,19 @@ fn run_product(options: RunOptions) -> Result<(), Box<dyn std::error::Error>> {
             quit: quit.clone(),
             close_requested: false,
         });
-        open_settings(cx);
         let palette = bongocat_ui::linux_system_menu_palette(cx);
         cx.global_mut::<Product>()
             .overlay
             .as_mut()
             .expect("running overlay")
             .set_linux_menu_presentation(presentation.clone(), palette);
-        if let Some(settings) = cx.global::<Product>().settings.window.clone() {
-            let _ = settings.update(cx, |_, window, cx| {
-                // The dialog reads Root's window state; release the typed
-                // settings-window update's Root borrow before opening it.
-                window.defer(cx, move |window, cx| {
-                    bongocat_ui::show_linux_input_permission(
-                        seed.language,
-                        |cx| {
-                            // Defer until the explanation dialog has closed.
-                            cx.defer(|cx| {
-                                if let Some(overlay) = cx.global_mut::<Product>().overlay.as_mut() {
-                                    overlay.start_linux_input();
-                                }
-                            });
-                        },
-                        window,
-                        cx,
-                    );
-                });
-            });
-        }
+
+        cx.defer(|cx| {
+            if let Some(overlay) = cx.global_mut::<Product>().overlay.as_mut() {
+                overlay.start_linux_input();
+            }
+        });
+
         if tray_error && let Some(settings) = cx.global::<Product>().settings.window.clone() {
             let _ = settings.update(cx, |_, window, cx| {
                 window.push_notification(
@@ -2792,6 +2781,8 @@ fn run_product(options: RunOptions) -> Result<(), Box<dyn std::error::Error>> {
             let mut gamepad_observer = GamepadConnectionObserver::default();
             let started = std::time::Instant::now();
             let mut last_tick = started;
+            let mut last_overlay_bounds = None;
+            let mut overlay_placement_debouncer = OverlayPlacementDebouncer::default();
             loop {
                 let scheduling = tick_runtime.frame_scheduling();
                 let interval = bongocat_runtime::frame_interval_for_runtime(
@@ -2820,11 +2811,28 @@ fn run_product(options: RunOptions) -> Result<(), Box<dyn std::error::Error>> {
                         .detach();
                         return true;
                     }
-                    if let Some(overlay) = cx.global_mut::<Product>().overlay.as_mut()
-                        && let Err(e) = overlay.tick()
-                    {
-                        record_failure(&failures, e.to_string());
-                        quit.store(true, Ordering::Release);
+                    if let Some(overlay) = cx.global_mut::<Product>().overlay.as_mut() {
+                        if let Err(e) = overlay.tick() {
+                            record_failure(&failures, e.to_string());
+                            quit.store(true, Ordering::Release);
+                        } else if let Ok(bounds) = overlay.window_bounds()
+                            && last_overlay_bounds != Some(bounds)
+                            && let Some(bounds) =
+                                overlay_placement_debouncer.observe(bounds, Instant::now())
+                        {
+                            if client
+                                .update_overlay_window_placement(
+                                    bounds.x,
+                                    bounds.y,
+                                    bounds.width,
+                                    bounds.height,
+                                )
+                                .is_ok()
+                            {
+                                overlay_placement_debouncer.mark_sent(bounds);
+                                last_overlay_bounds = Some(bounds);
+                            }
+                        }
                     }
                     if let Ok(resized) = resize_receiver.try_recv() {
                         let client = client.clone();
