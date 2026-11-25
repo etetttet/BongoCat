@@ -1,37 +1,82 @@
-## CachyOS / Linux 額外安裝需求
+## CachyOS / Linux 安裝說明
 
-本分支 `linux-wayland` 除了專案本身的程式碼外，還需要額外安裝及設定以下系統元件，才能完整使用 Linux Input Helper 功能。
+本分支 `linux-wayland` 提供 CachyOS 專用安裝腳本，包含 BongoCat 主程式、Linux Input Helper 與 Polkit 權限設定。
 
-### 必須安裝及設定
+### 系統需求
 
-- [ ] **Polkit**
-  - 安裝 Polkit 權限管理相關元件。
-  - 安裝授權設定檔：
-    `/usr/share/polkit-1/actions/com.bongocat.input-helper.policy`
-  - 安裝使用者授權規則：
-    `/etc/polkit-1/rules.d/49-bongocat-input-helper.rules`
+- CachyOS
+- Rust / Cargo
+- Polkit
+- libinput
+- sudo
+- pkexec
+- flock
 
-- [ ] **Input Helper**
-  - 安裝 Input Helper 執行檔：
-    `/usr/libexec/bongocat-input-helper`
-  - 設定檔案權限：
-    `root:root`
-    `0755`
+### 安裝
 
-- [ ] **systemd**
-  - 安裝及設定 Input Helper 相關 systemd service。
-  - 確認服務已啟用並正常運作。
+```bash
+git clone -b linux-wayland https://github.com/etetttet/BongoCat.git
+cd BongoCat
 
-### 重灌 CachyOS 後注意事項
+chmod +x scripts/*.sh
+./scripts/install-linux.sh
+```
 
-1. 先安裝必要的系統套件。
-2. 重新編譯 BongoCat。
-3. 安裝 Input Helper。
-4. 安裝 Polkit policy 與授權規則。
-5. 設定及啟用 systemd service。
-6. 確認服務正常運作後再啟動 BongoCat。
+安裝程式會自動：
 
-**注意：** Git Repository 只保存程式碼，不會自動安裝上述系統檔案或還原系統服務。
+1. 確認作業系統為 CachyOS。
+2. 檢查必要套件與指令。
+3. 編譯 BongoCat 主程式及 Linux Input Helper。
+4. 備份既有安裝檔案。
+5. 安裝主程式、Desktop Entry、Input Helper 與 Polkit 設定。
+6. 執行安裝結果檢查。
+
+安裝完成後，可以從應用程式選單啟動 BongoCat，或執行：
+
+```bash
+bongocat-app
+```
+
+### 更新
+
+進入專案目錄後執行：
+
+```bash
+./scripts/install-linux.sh
+```
+
+安裝程式會自動辨識既有安裝狀態、備份舊檔案，再重新編譯及安裝。
+
+### 檢查安裝
+
+```bash
+bash scripts/check-linux.sh
+```
+
+檢查內容包含主程式、Desktop Entry、Input Helper、Polkit 設定及必要系統依賴。
+
+### 解除安裝
+
+```bash
+bash scripts/uninstall-linux.sh
+```
+
+解除安裝程式會詢問是否移除安裝檔案，以及是否從最近一次備份還原原有檔案。
+
+備份資料會保留在：
+
+```text
+/var/backups/bongocat-input-helper/
+```
+
+使用者設定與個人資料不會由此腳本刪除。
+
+### 注意事項
+
+- 此安裝腳本僅支援 CachyOS，不保證適用於其他 Arch Linux 衍生發行版。
+- 安裝及解除安裝腳本請使用一般使用者執行，不要加上 `sudo`。
+- 安裝過程需要 sudo 權限。
+- Linux Input Helper 使用 Polkit 進行權限管理。
 
 ![BongoCat](https://socialify.git.ci/ayangweb/BongoCat/image?font=JetBrains+Mono&forks=1&issues=1&language=1&logo=https%3A%2F%2Fi0.hdslb.com%2Fbfs%2Fopenplatform%2F8b37066049da62a8e6d105363472ef72fe2e435b.png&name=1&owner=1&pattern=Brick+Wall&pulls=1&stargazers=1&theme=Auto)
 
