@@ -71,6 +71,19 @@ bash scripts/uninstall-linux.sh
 
 使用者設定與個人資料不會由此腳本刪除。
 
+### 自動啟動
+
+```bash
+mkdir -p ~/.config/autostart
+cp /usr/share/applications/com.ayangweb.bongo-cat.desktop ~/.config/autostart/
+```
+
+### 解除自動啟動
+
+```bash
+rm ~/.config/autostart/com.ayangweb.bongo-cat.desktop
+```
+
 ### 注意事項
 
 - 此安裝腳本僅支援 CachyOS，不保證適用於其他 Arch Linux 衍生發行版。
